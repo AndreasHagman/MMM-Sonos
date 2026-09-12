@@ -184,6 +184,13 @@ Module.register('MMM-Sonos', {
       case 'SONOS_CONTROL_RESULT':
         this._handleControlResult(payload);
         break;
+
+      case 'SONOS_FAVORITES':
+        this.favorites = payload?.favorites || [];
+        if (this._activeControlZoneId) {
+          this._renderControlOverlayFavorites();
+        }
+        break;
     }
   },
 
@@ -804,6 +811,7 @@ Module.register('MMM-Sonos', {
     backdrop.appendChild(sheet);
     document.body.appendChild(backdrop);
     this._controlOverlayEl = backdrop;
+    this._renderControlOverlayFavorites();
   },
 
   _syncControlOverlay() {
@@ -836,6 +844,49 @@ Module.register('MMM-Sonos', {
         volumeLabel.innerText = `${group.volume}%`;
       }
     }
+
+    this._renderControlOverlayFavorites();
+  },
+
+  _renderControlOverlayFavorites() {
+    if (!this._controlOverlayEl) {
+      return;
+    }
+    const list = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-favorites');
+    if (!list) {
+      return;
+    }
+    list.innerHTML = '';
+
+    const group = this._findGroupById(this._activeControlZoneId);
+    const maxFavorites = this.config.maxFavorites || 12;
+    const favorites = (this.favorites || []).slice(0, maxFavorites);
+
+    if (!favorites.length) {
+      const empty = document.createElement('div');
+      empty.className = 'mmm-sonos__overlay-favorites-empty';
+      empty.innerText = this.translate('NO_FAVORITES');
+      list.appendChild(empty);
+      return;
+    }
+
+    favorites.forEach((favorite) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'mmm-sonos__overlay-favorite';
+      const isActive = !!(group && group.title && group.title === favorite.title);
+      if (isActive) {
+        item.classList.add('mmm-sonos__overlay-favorite--active');
+      }
+      item.innerText = favorite.title;
+      item.addEventListener('click', () => {
+        this.sendSocketNotification('SONOS_CONTROL_PLAY_FAVORITE', {
+          zoneId: this._activeControlZoneId,
+          favoriteId: favorite.id
+        });
+      });
+      list.appendChild(item);
+    });
   },
 
   _showZoneUnavailableAndClose() {
