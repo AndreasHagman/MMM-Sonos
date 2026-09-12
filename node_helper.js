@@ -137,8 +137,8 @@ module.exports = NodeHelper.create({
     }
 
     if (this.config.enableControls) {
+      this._refreshFavorites();
       if (!this.favoritesTimer) {
-        this._refreshFavorites();
         this.favoritesTimer = setInterval(
           () => this._refreshFavorites(),
           Math.max(this.config.favoritesRefreshInterval || 300000, 60000)
