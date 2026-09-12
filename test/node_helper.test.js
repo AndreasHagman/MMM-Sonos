@@ -854,6 +854,55 @@ describe('_isHidden() – whitelist/blacklist filtering', () => {
   });
 });
 
+// Pure copy of the zone-inclusion logic from node_helper.js `_mapGroups()`,
+// extracted for unit testing (mirrors the `_isHidden` pattern above).
+function _shouldIncludeZone(state, isTvSource, config) {
+  const allowWhenPaused = config.showWhenPaused || isTvSource || config.enableControls;
+  if (state !== 'playing' && !allowWhenPaused) {
+    return false;
+  }
+  if (state === 'stopped' && config.hideWhenNothingPlaying && !isTvSource && !config.enableControls) {
+    return false;
+  }
+  return true;
+}
+
+describe('_shouldIncludeZone()', () => {
+  const defaultConfig = { showWhenPaused: false, hideWhenNothingPlaying: true, enableControls: false };
+
+  it('excludes a stopped zone by default (regression: current behavior)', () => {
+    assert.equal(_shouldIncludeZone('stopped', false, defaultConfig), false);
+  });
+
+  it('excludes a paused zone by default (regression: current behavior)', () => {
+    assert.equal(_shouldIncludeZone('paused', false, defaultConfig), false);
+  });
+
+  it('includes a playing zone by default (regression: current behavior)', () => {
+    assert.equal(_shouldIncludeZone('playing', false, defaultConfig), true);
+  });
+
+  it('includes a paused zone when showWhenPaused is set (regression: current behavior)', () => {
+    assert.equal(_shouldIncludeZone('paused', false, { ...defaultConfig, showWhenPaused: true }), true);
+  });
+
+  it('always includes a TV source zone (regression: current behavior)', () => {
+    assert.equal(_shouldIncludeZone('stopped', true, defaultConfig), true);
+  });
+
+  it('includes a stopped zone when enableControls is true', () => {
+    assert.equal(_shouldIncludeZone('stopped', false, { ...defaultConfig, enableControls: true }), true);
+  });
+
+  it('includes a paused zone when enableControls is true', () => {
+    assert.equal(_shouldIncludeZone('paused', false, { ...defaultConfig, enableControls: true }), true);
+  });
+
+  it('includes a playing zone when enableControls is true', () => {
+    assert.equal(_shouldIncludeZone('playing', false, { ...defaultConfig, enableControls: true }), true);
+  });
+});
+
 describe('_resolveDisplayMode()', () => {
   it('returns "fullscreen" when configured', () => {
     assert.equal(_resolveDisplayMode('fullscreen', 3, 2), 'fullscreen');

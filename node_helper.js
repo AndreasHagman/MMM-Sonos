@@ -63,6 +63,7 @@ module.exports = NodeHelper.create({
         maxGroups: 6,
         showWhenPaused: false,
         hideWhenNothingPlaying: true,
+        enableControls: false,
         forceHttps: false,
         showTvSource: true,
         showTvIcon: true,
@@ -296,7 +297,7 @@ module.exports = NodeHelper.create({
         const source = this._detectSource(track);
         const isTvSource = source === 'tv';
 
-        const allowWhenPaused = this.config.showWhenPaused || isTvSource;
+        const allowWhenPaused = this.config.showWhenPaused || isTvSource || this.config.enableControls;
         if (state !== 'playing' && !allowWhenPaused) {
           this.sendDebug('Skipping group because it is not playing (and not allowed when paused)', name || id, state, {
             isTvSource
@@ -304,7 +305,7 @@ module.exports = NodeHelper.create({
           continue;
         }
 
-        if (state === 'stopped' && this.config.hideWhenNothingPlaying && !isTvSource) {
+        if (state === 'stopped' && this.config.hideWhenNothingPlaying && !isTvSource && !this.config.enableControls) {
           this.sendDebug('Hiding stopped group because hideWhenNothingPlaying is enabled', name || id);
           continue;
         }
