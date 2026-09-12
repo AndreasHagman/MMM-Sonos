@@ -558,6 +558,12 @@ Some ideas for future improvements:
 - ~~Cache album art locally for faster loading on slower networks.~~ ✅ **Completed**
 - Adjust volume on individual speakers in a group, in addition to group volume.
 - Possibility to group and ungroup speakers.
+- Skip to the next/previous track directly from the control overlay, not just play/pause.
+- Add a sleep timer — automatically pause playback after N minutes.
+- Add a mute button per speaker, in addition to the volume slider.
+- Make `enableControls` work correctly with `displayMode: 'fullscreen'` (today it can show "nothing playing" even when music is playing on another zone).
+- Don't let `maxGroups` silently limit the control surface the way it limits the passive display.
+- Show a small icon per favorite indicating its type (radio, playlist, stream).
 
 ## License
 
