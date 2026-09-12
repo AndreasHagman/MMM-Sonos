@@ -79,6 +79,10 @@ Module.register('MMM-Sonos', {
     this.progressAnimationTimer = null;
     this._animTransitionTimer = null;
     this._fullUpdateDebounceTimer = null;
+    this.favorites = [];
+    this._activeControlZoneId = null;
+    this._controlOverlayEl = null;
+    this._controlVolumeDebounceTimer = null;
 
   this._log('Starting MMM-Sonos module');
     this.sendSocketNotification('SONOS_CONFIG', this.config);
@@ -87,6 +91,7 @@ Module.register('MMM-Sonos', {
   },
 
   stop() {
+    this._closeControlOverlay();
     if (this.updateTimer) {
       clearInterval(this.updateTimer);
       this.updateTimer = null;
@@ -131,6 +136,10 @@ Module.register('MMM-Sonos', {
         this.lastUpdated = newTimestamp;
         this.error = null;
 
+        if (this.config.enableControls && this._activeControlZoneId) {
+          this._syncControlOverlay();
+        }
+
         if (needsFull) {
           this._log('Structural change — full DOM update');
           this._animatedUpdateDom();
@@ -170,6 +179,10 @@ Module.register('MMM-Sonos', {
 
       case 'SONOS_CACHE_CLEARED':
         this._log('Album art cache cleared', payload);
+        break;
+
+      case 'SONOS_CONTROL_RESULT':
+        this._handleControlResult(payload);
         break;
     }
   },
@@ -646,6 +659,19 @@ Module.register('MMM-Sonos', {
       content.appendChild(members);
     }
 
+    if (this.config.enableControls) {
+      container.classList.add('mmm-sonos__group--clickable');
+      container.setAttribute('role', 'button');
+      container.setAttribute('tabindex', '0');
+      container.addEventListener('click', () => this._openControlOverlay(group.id));
+      container.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          this._openControlOverlay(group.id);
+        }
+      });
+    }
+
     container.appendChild(content);
     return container;
   },
@@ -663,6 +689,184 @@ Module.register('MMM-Sonos', {
     }
     ts.innerText = `${this.translate('UPDATED')} ${date.toLocaleTimeString(this.config.dateLocale, options)}`;
     return ts;
+  },
+
+  _findGroupById(zoneId) {
+    return (this.groups || []).find((g) => g.id === zoneId) || null;
+  },
+
+  _openControlOverlay(zoneId) {
+    if (!this.config.enableControls) {
+      return;
+    }
+    this._activeControlZoneId = zoneId;
+    this._buildControlOverlay();
+  },
+
+  _closeControlOverlay() {
+    this._activeControlZoneId = null;
+    if (this._controlOverlayEl) {
+      this._controlOverlayEl.remove();
+      this._controlOverlayEl = null;
+    }
+  },
+
+  _debounceSetVolume(zoneId, volume) {
+    if (this._controlVolumeDebounceTimer) {
+      clearTimeout(this._controlVolumeDebounceTimer);
+    }
+    this._controlVolumeDebounceTimer = setTimeout(() => {
+      this._controlVolumeDebounceTimer = null;
+      this.sendSocketNotification('SONOS_CONTROL_SET_VOLUME', { zoneId, volume });
+    }, 150);
+  },
+
+  _buildControlOverlay() {
+    if (this._controlOverlayEl) {
+      this._controlOverlayEl.remove();
+      this._controlOverlayEl = null;
+    }
+
+    const group = this._findGroupById(this._activeControlZoneId);
+    if (!group) {
+      this._activeControlZoneId = null;
+      return;
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'mmm-sonos__overlay-backdrop';
+    backdrop.dataset.moduleId = this.identifier;
+    backdrop.addEventListener('click', (event) => {
+      if (event.target === backdrop) {
+        this._closeControlOverlay();
+      }
+    });
+
+    const sheet = document.createElement('div');
+    sheet.className = 'mmm-sonos__overlay-sheet';
+
+    const header = document.createElement('div');
+    header.className = 'mmm-sonos__overlay-header';
+    const title = document.createElement('span');
+    title.className = 'mmm-sonos__overlay-title';
+    title.innerText = group.name || '';
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'mmm-sonos__overlay-close';
+    closeBtn.innerText = '×';
+    closeBtn.setAttribute('aria-label', this.translate('CLOSE'));
+    closeBtn.addEventListener('click', () => this._closeControlOverlay());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    sheet.appendChild(header);
+
+    const errorEl = document.createElement('div');
+    errorEl.className = 'mmm-sonos__overlay-error';
+    errorEl.hidden = true;
+    sheet.appendChild(errorEl);
+
+    const isPlaying = ['playing', 'transitioning', 'buffering'].includes((group.playbackState || '').toLowerCase());
+    const playPauseBtn = document.createElement('button');
+    playPauseBtn.type = 'button';
+    playPauseBtn.className = 'mmm-sonos__overlay-playpause';
+    playPauseBtn.innerText = isPlaying ? '⏸' : '▶';
+    playPauseBtn.dataset.isPlaying = String(isPlaying);
+    playPauseBtn.addEventListener('click', () => {
+      const notification = playPauseBtn.dataset.isPlaying === 'true' ? 'SONOS_CONTROL_PAUSE' : 'SONOS_CONTROL_PLAY';
+      this.sendSocketNotification(notification, { zoneId: group.id });
+    });
+    sheet.appendChild(playPauseBtn);
+
+    const volumeRow = document.createElement('div');
+    volumeRow.className = 'mmm-sonos__overlay-volume';
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.step = String(this.config.controlVolumeStep || 5);
+    slider.value = String(group.volume ?? 0);
+    slider.className = 'mmm-sonos__overlay-volume-slider';
+    const volumeLabel = document.createElement('span');
+    volumeLabel.className = 'mmm-sonos__overlay-volume-label';
+    volumeLabel.innerText = `${slider.value}%`;
+    slider.addEventListener('input', () => {
+      volumeLabel.innerText = `${slider.value}%`;
+      this._debounceSetVolume(group.id, Number(slider.value));
+    });
+    volumeRow.appendChild(slider);
+    volumeRow.appendChild(volumeLabel);
+    sheet.appendChild(volumeRow);
+
+    const favoritesList = document.createElement('div');
+    favoritesList.className = 'mmm-sonos__overlay-favorites';
+    sheet.appendChild(favoritesList);
+
+    backdrop.appendChild(sheet);
+    document.body.appendChild(backdrop);
+    this._controlOverlayEl = backdrop;
+  },
+
+  _syncControlOverlay() {
+    const group = this._findGroupById(this._activeControlZoneId);
+    if (!group) {
+      this._showZoneUnavailableAndClose();
+      return;
+    }
+    if (!this._controlOverlayEl) {
+      return;
+    }
+
+    const title = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-title');
+    if (title) {
+      title.innerText = group.name || '';
+    }
+
+    const playPauseBtn = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-playpause');
+    if (playPauseBtn) {
+      const isPlaying = ['playing', 'transitioning', 'buffering'].includes((group.playbackState || '').toLowerCase());
+      playPauseBtn.innerText = isPlaying ? '⏸' : '▶';
+      playPauseBtn.dataset.isPlaying = String(isPlaying);
+    }
+
+    const slider = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-volume-slider');
+    const volumeLabel = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-volume-label');
+    if (slider && document.activeElement !== slider && group.volume != null) {
+      slider.value = String(group.volume);
+      if (volumeLabel) {
+        volumeLabel.innerText = `${group.volume}%`;
+      }
+    }
+  },
+
+  _showZoneUnavailableAndClose() {
+    if (!this._controlOverlayEl) {
+      this._activeControlZoneId = null;
+      return;
+    }
+    const errorEl = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-error');
+    if (errorEl) {
+      errorEl.hidden = false;
+      errorEl.innerText = this.translate('ZONE_UNAVAILABLE');
+    }
+    setTimeout(() => this._closeControlOverlay(), 1500);
+  },
+
+  _handleControlResult(payload) {
+    if (!this._controlOverlayEl || !payload || payload.zoneId !== this._activeControlZoneId) {
+      return;
+    }
+    const errorEl = this._controlOverlayEl.querySelector('.mmm-sonos__overlay-error');
+    if (!errorEl) {
+      return;
+    }
+    if (payload.success) {
+      errorEl.hidden = true;
+      errorEl.innerText = '';
+    } else {
+      errorEl.hidden = false;
+      const group = this._findGroupById(this._activeControlZoneId);
+      errorEl.innerText = `${this.translate('CONTROL_ERROR')}${group?.name ? ': ' + group.name : ''}`;
+    }
   },
 
   _resolveDisplayMode() {
