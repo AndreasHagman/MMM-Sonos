@@ -212,6 +212,18 @@ function _resolveFullscreenGroup(groups, fullscreenSpeaker) {
   return groups[0];
 }
 
+// Pure copy of the new `_resolveMemberHost()` helper from node_helper.js, for unit testing.
+function _resolveMemberHost(member) {
+  const location = member && (member.Location || member.location);
+  if (!location) return null;
+  try {
+    const url = new URL(location);
+    return { host: url.hostname, port: url.port ? parseInt(url.port, 10) : 1400 };
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -974,5 +986,30 @@ describe('_resolveFullscreenGroup()', () => {
 
   it('returns null when groups is null', () => {
     assert.equal(_resolveFullscreenGroup(null, null), null);
+  });
+});
+
+describe('_resolveMemberHost()', () => {
+  it('parses host and port from a Location URL', () => {
+    const result = _resolveMemberHost({ Location: 'http://192.168.1.50:1400/xml/device_description.xml' });
+    assert.deepEqual(result, { host: '192.168.1.50', port: 1400 });
+  });
+
+  it('defaults to port 1400 when the URL has no explicit port', () => {
+    const result = _resolveMemberHost({ Location: 'http://192.168.1.50/xml/device_description.xml' });
+    assert.deepEqual(result, { host: '192.168.1.50', port: 1400 });
+  });
+
+  it('returns null when there is no Location field', () => {
+    assert.equal(_resolveMemberHost({ ZoneName: 'Kitchen' }), null);
+  });
+
+  it('returns null for a malformed Location URL', () => {
+    assert.equal(_resolveMemberHost({ Location: 'not-a-url' }), null);
+  });
+
+  it('accepts a lowercase location field', () => {
+    const result = _resolveMemberHost({ location: 'http://10.0.0.17:1400/xml/device_description.xml' });
+    assert.deepEqual(result, { host: '10.0.0.17', port: 1400 });
   });
 });

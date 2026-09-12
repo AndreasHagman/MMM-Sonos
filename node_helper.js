@@ -260,6 +260,7 @@ module.exports = NodeHelper.create({
         ? Object.values(membersRaw)
         : [];
       const members = [];
+      const memberHosts = [];
       let skipGroup = false;
 
       if (hiddenGroups.has((id || '').toLowerCase()) || hiddenGroups.has((name || '').toLowerCase())) {
@@ -278,6 +279,10 @@ module.exports = NodeHelper.create({
           break;
         }
         members.push(displayName);
+        const memberHost = this._resolveMemberHost(member);
+        if (memberHost) {
+          memberHosts.push(memberHost);
+        }
       }
 
       if (skipGroup) {
@@ -448,6 +453,7 @@ module.exports = NodeHelper.create({
           id: id || coordinator.uuid || coordinator.host,
           name: name || coordinatorName || 'Sonos',
           coordinatorHost: coordinator.host || null,
+          memberHosts: memberHosts.length ? memberHosts : (coordinator.host ? [{ host: coordinator.host, port: coordinator.port || 1400 }] : []),
           playbackState: state,
           title: displayTitle,
           artist: displayArtist,
@@ -498,6 +504,20 @@ module.exports = NodeHelper.create({
     }
 
     return null;
+  },
+
+  _resolveMemberHost(member) {
+    const location = this._pick(member, ['Location', 'location']);
+    if (!location) {
+      return null;
+    }
+    try {
+      const url = new URL(location);
+      return { host: url.hostname, port: url.port ? parseInt(url.port, 10) : 1400 };
+    } catch (error) {
+      this.sendDebug('Failed to parse member location', location, error?.message || error);
+      return null;
+    }
   },
 
   async _inferCoordinatorName(coordinator) {
