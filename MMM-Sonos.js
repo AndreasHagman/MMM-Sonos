@@ -20,6 +20,10 @@ Module.register('MMM-Sonos', {
     forceHttps: false,
     hideWhenNothingPlaying: true,
     showWhenPaused: false,
+    enableControls: false,
+    favoritesRefreshInterval: 300000,
+    maxFavorites: 12,
+    controlVolumeStep: 5,
     fadePausedGroups: true,
     showGroupMembers: true,
     showPlaybackState: false,
@@ -336,7 +340,8 @@ Module.register('MMM-Sonos', {
 
     const playbackState = (group.playbackState || '').toLowerCase();
     const isPlaying = ['playing', 'transitioning', 'buffering'].includes(playbackState);
-    if (!isPlaying && !this.config.showWhenPaused) {
+    const isIdleControlCard = this.config.enableControls && !isPlaying && !this.config.showWhenPaused;
+    if (!isPlaying && !this.config.showWhenPaused && !this.config.enableControls) {
       return null;
     }
 
@@ -347,6 +352,9 @@ Module.register('MMM-Sonos', {
 
     const container = document.createElement('div');
     container.className = 'mmm-sonos__group';
+    if (isIdleControlCard) {
+      container.classList.add('mmm-sonos__group--idle');
+    }
     container.dataset.groupId = group.id;
     container.style.display = 'flex';
     container.style.gap = '0.45rem';
@@ -407,7 +415,7 @@ Module.register('MMM-Sonos', {
     const configuredSize = Number(this.config.albumArtSize);
     const sizeValue = !Number.isNaN(configuredSize) && configuredSize > 0 ? `${configuredSize}px` : null;
     const iconFontSize = !Number.isNaN(configuredSize) && configuredSize > 0 ? `${Math.round(configuredSize * 0.42)}px` : null;
-    if (group.albumArt) {
+    if (group.albumArt && !isIdleControlCard) {
       const artWrapper = document.createElement('div');
       artWrapper.className = 'mmm-sonos__art';
       if (sizeValue) {
@@ -486,6 +494,18 @@ Module.register('MMM-Sonos', {
       }
 
       container.appendChild(artWrapper);
+    } else if (isIdleControlCard) {
+      const idleWrapper = document.createElement('div');
+      idleWrapper.className = 'mmm-sonos__art mmm-sonos__idle-icon';
+      if (sizeValue) {
+        idleWrapper.style.width = sizeValue;
+        idleWrapper.style.height = sizeValue;
+      }
+      idleWrapper.innerText = '🔇';
+      if (iconFontSize) {
+        idleWrapper.style.fontSize = iconFontSize;
+      }
+      container.appendChild(idleWrapper);
     }
 
     const content = document.createElement('div');
@@ -543,7 +563,7 @@ Module.register('MMM-Sonos', {
       content.appendChild(sourceElement);
     }
 
-    const hasTrackInfo = group.title || group.artist;
+    const hasTrackInfo = !isIdleControlCard && (group.title || group.artist);
     const titleIsDuplicateTv = isTvSource && (!group.artist) && typeof group.title === 'string' && group.title.trim().toLowerCase() === 'tv';
 
     if (hasTrackInfo && !titleIsDuplicateTv) {
@@ -587,10 +607,15 @@ Module.register('MMM-Sonos', {
       }
 
       content.appendChild(titleWrapper);
+    } else if (isIdleControlCard) {
+      const idleLabel = document.createElement('div');
+      idleLabel.className = 'mmm-sonos__idle-label';
+      idleLabel.innerText = this.translate('IDLE_LABEL');
+      content.appendChild(idleLabel);
     }
 
     // Playback source indicator
-    if (this.config.showPlaybackSource && group.source && !isTvSource) {
+    if (this.config.showPlaybackSource && group.source && !isTvSource && !isIdleControlCard) {
       const sourceElement = this._renderPlaybackSource(group.source, alignment);
       if (sourceElement) {
         content.appendChild(sourceElement);
