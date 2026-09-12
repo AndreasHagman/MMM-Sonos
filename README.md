@@ -552,10 +552,12 @@ This module uses dependency overrides to mitigate known security vulnerabilities
 
 Some ideas for future improvements:
 
-- Add volume control through touch or remote notifications.
+- ~~Add volume control through touch or remote notifications.~~ ✅ **Completed**
 - ~~Show the playback source (Spotify, Radio, Line-in) with an icon.~~ ✅ **Completed**
 - ~~Include a simple progress indicator for the current track.~~ ✅ **Completed**
 - ~~Cache album art locally for faster loading on slower networks.~~ ✅ **Completed**
+- Adjust volume on individual speakers in a group, in addition to group volume.
+- Possibility to group and ungroup speakers.
 
 ## License
 
