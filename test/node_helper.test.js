@@ -1013,3 +1013,41 @@ describe('_resolveMemberHost()', () => {
     assert.deepEqual(result, { host: '10.0.0.17', port: 1400 });
   });
 });
+
+// Pure copy of the favorites-mapping logic from node_helper.js `_refreshFavorites()`.
+function _mapFavorites(items) {
+  return (items || [])
+    .map((item, index) => ({
+      id: item.id || `favorite-${index}`,
+      title: item.title || 'Untitled',
+      uri: item.uri
+    }))
+    .filter((f) => !!f.uri);
+}
+
+describe('_mapFavorites()', () => {
+  it('maps title/uri/id fields', () => {
+    const result = _mapFavorites([{ id: 'FV:2/0', title: 'NRK P3', uri: 'x-sonosapi-hls:p3' }]);
+    assert.deepEqual(result, [{ id: 'FV:2/0', title: 'NRK P3', uri: 'x-sonosapi-hls:p3' }]);
+  });
+
+  it('drops favorites with no uri', () => {
+    const result = _mapFavorites([{ id: 'a', title: 'Broken favorite' }]);
+    assert.deepEqual(result, []);
+  });
+
+  it('falls back to an index-based id when missing', () => {
+    const result = _mapFavorites([{ title: 'NRK P1', uri: 'x-sonosapi-hls:p1' }]);
+    assert.equal(result[0].id, 'favorite-0');
+  });
+
+  it('falls back to "Untitled" when title is missing', () => {
+    const result = _mapFavorites([{ uri: 'x-sonosapi-hls:p1' }]);
+    assert.equal(result[0].title, 'Untitled');
+  });
+
+  it('returns an empty array for empty/undefined input', () => {
+    assert.deepEqual(_mapFavorites([]), []);
+    assert.deepEqual(_mapFavorites(undefined), []);
+  });
+});

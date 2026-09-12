@@ -21,6 +21,8 @@ module.exports = NodeHelper.create({
     this.updateTimer = null;
     this.isDiscovering = false;
     this.lastPayload = [];
+    this.favorites = [];
+    this.favoritesTimer = null;
     this.albumArtCache = new Map(); // in-memory cache: url-hash → local filename
     this.accentColorCache = new Map(); // in-memory cache: filename → { r, g, b } | null
 
@@ -34,6 +36,10 @@ module.exports = NodeHelper.create({
 
   async stop() {
     this._clearTimer();
+    if (this.favoritesTimer) {
+      clearInterval(this.favoritesTimer);
+      this.favoritesTimer = null;
+    }
   },
 
   socketNotificationReceived(notification, payload) {
@@ -64,6 +70,7 @@ module.exports = NodeHelper.create({
         showWhenPaused: false,
         hideWhenNothingPlaying: true,
         enableControls: false,
+        favoritesRefreshInterval: 300000,
         forceHttps: false,
         showTvSource: true,
         showTvIcon: true,
@@ -115,6 +122,19 @@ module.exports = NodeHelper.create({
 
     if (!this.updateTimer) {
       this.updateTimer = setInterval(() => this._refresh(), Math.max(this.config.updateInterval, 5000));
+    }
+
+    if (this.config.enableControls) {
+      if (!this.favoritesTimer) {
+        this._refreshFavorites();
+        this.favoritesTimer = setInterval(
+          () => this._refreshFavorites(),
+          Math.max(this.config.favoritesRefreshInterval || 300000, 60000)
+        );
+      }
+    } else if (this.favoritesTimer) {
+      clearInterval(this.favoritesTimer);
+      this.favoritesTimer = null;
     }
 
     // Only call _refresh() here when the coordinator was NOT already known above.
@@ -228,6 +248,25 @@ module.exports = NodeHelper.create({
     } catch (error) {
       this.sendError('Failed to fetch Sonos data', error);
       this.coordinator = null; // Tving re-discovery
+    }
+  },
+
+  async _refreshFavorites() {
+    if (!this.coordinator) {
+      return;
+    }
+    try {
+      const result = await this.coordinator.getFavorites();
+      this.favorites = (result?.items || [])
+        .map((item, index) => ({
+          id: item.id || `favorite-${index}`,
+          title: item.title || 'Untitled',
+          uri: item.uri
+        }))
+        .filter((f) => !!f.uri);
+      this.sendSocketNotification('SONOS_FAVORITES', { favorites: this.favorites, timestamp: Date.now() });
+    } catch (error) {
+      this.sendDebug('Failed to fetch favorites', error?.message || error);
     }
   },
 
