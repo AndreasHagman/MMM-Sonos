@@ -54,6 +54,18 @@ module.exports = NodeHelper.create({
         this._clearAlbumArtCache();
         this.sendSocketNotification('SONOS_CACHE_CLEARED', { timestamp: Date.now() });
         break;
+      case 'SONOS_CONTROL_PLAY':
+        this._handlePlay(payload?.zoneId);
+        break;
+      case 'SONOS_CONTROL_PAUSE':
+        this._handlePause(payload?.zoneId);
+        break;
+      case 'SONOS_CONTROL_SET_VOLUME':
+        this._handleSetVolume(payload?.zoneId, payload?.volume);
+        break;
+      case 'SONOS_CONTROL_PLAY_FAVORITE':
+        this._handlePlayFavorite(payload?.zoneId, payload?.favoriteId);
+        break;
     }
   },
 
@@ -267,6 +279,74 @@ module.exports = NodeHelper.create({
       this.sendSocketNotification('SONOS_FAVORITES', { favorites: this.favorites, timestamp: Date.now() });
     } catch (error) {
       this.sendDebug('Failed to fetch favorites', error?.message || error);
+    }
+  },
+
+  async _handlePlay(zoneId) {
+    const zone = this._findZone(zoneId);
+    if (!zone || !zone.coordinatorHost) {
+      this._sendControlResult(zoneId, 'play', false, 'Zone not found');
+      return;
+    }
+    try {
+      await new Sonos(zone.coordinatorHost).play();
+      this._sendControlResult(zoneId, 'play', true);
+    } catch (error) {
+      this._sendControlResult(zoneId, 'play', false, error?.message || String(error));
+    }
+  },
+
+  async _handlePause(zoneId) {
+    const zone = this._findZone(zoneId);
+    if (!zone || !zone.coordinatorHost) {
+      this._sendControlResult(zoneId, 'pause', false, 'Zone not found');
+      return;
+    }
+    try {
+      await new Sonos(zone.coordinatorHost).pause();
+      this._sendControlResult(zoneId, 'pause', true);
+    } catch (error) {
+      this._sendControlResult(zoneId, 'pause', false, error?.message || String(error));
+    }
+  },
+
+  async _handleSetVolume(zoneId, volume) {
+    const zone = this._findZone(zoneId);
+    if (!zone) {
+      this._sendControlResult(zoneId, 'setVolume', false, 'Zone not found');
+      return;
+    }
+    const targets = (zone.memberHosts && zone.memberHosts.length)
+      ? zone.memberHosts
+      : (zone.coordinatorHost ? [{ host: zone.coordinatorHost, port: 1400 }] : []);
+    if (!targets.length) {
+      this._sendControlResult(zoneId, 'setVolume', false, 'No reachable speakers in zone');
+      return;
+    }
+    try {
+      await Promise.all(targets.map((target) => new Sonos(target.host, target.port).setVolume(volume)));
+      this._sendControlResult(zoneId, 'setVolume', true);
+    } catch (error) {
+      this._sendControlResult(zoneId, 'setVolume', false, error?.message || String(error));
+    }
+  },
+
+  async _handlePlayFavorite(zoneId, favoriteId) {
+    const zone = this._findZone(zoneId);
+    if (!zone || !zone.coordinatorHost) {
+      this._sendControlResult(zoneId, 'playFavorite', false, 'Zone not found');
+      return;
+    }
+    const favorite = (this.favorites || []).find((f) => f.id === favoriteId);
+    if (!favorite) {
+      this._sendControlResult(zoneId, 'playFavorite', false, 'Favorite not found');
+      return;
+    }
+    try {
+      await new Sonos(zone.coordinatorHost).setAVTransportURI(favorite.uri);
+      this._sendControlResult(zoneId, 'playFavorite', true);
+    } catch (error) {
+      this._sendControlResult(zoneId, 'playFavorite', false, error?.message || String(error));
     }
   },
 
@@ -514,6 +594,14 @@ module.exports = NodeHelper.create({
     }
   const ordered = formatted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     return ordered.slice(0, this.config.maxGroups || ordered.length);
+  },
+
+  _findZone(zoneId) {
+    return (this.lastPayload || []).find((z) => z.id === zoneId) || null;
+  },
+
+  _sendControlResult(zoneId, action, success, error) {
+    this.sendSocketNotification('SONOS_CONTROL_RESULT', { zoneId, action, success, error: error || null });
   },
 
   _resolveCoordinator(group) {

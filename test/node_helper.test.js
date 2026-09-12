@@ -1051,3 +1051,28 @@ describe('_mapFavorites()', () => {
     assert.deepEqual(_mapFavorites(undefined), []);
   });
 });
+
+// Pure copy of the `_findZone()` lookup helper from node_helper.js.
+function _findZone(lastPayload, zoneId) {
+  return (lastPayload || []).find((z) => z.id === zoneId) || null;
+}
+
+describe('_findZone()', () => {
+  const payload = [
+    { id: 'zone-1', name: 'Kitchen' },
+    { id: 'zone-2', name: 'Bedroom' }
+  ];
+
+  it('finds a zone by id', () => {
+    assert.deepEqual(_findZone(payload, 'zone-2'), { id: 'zone-2', name: 'Bedroom' });
+  });
+
+  it('returns null when the zone id is not found', () => {
+    assert.equal(_findZone(payload, 'zone-99'), null);
+  });
+
+  it('returns null for an empty payload', () => {
+    assert.equal(_findZone([], 'zone-1'), null);
+    assert.equal(_findZone(undefined, 'zone-1'), null);
+  });
+});
