@@ -425,6 +425,7 @@ With `enableControls: true`:
 #### Screenshots
 
 **Idle zone card:**
+
 <img width="877" height="462" alt="image" src="https://github.com/user-attachments/assets/dcfb449a-d50f-43ce-b934-5206cded1fa9" />
 
 **Control overlay (play/pause, volume):**
@@ -440,10 +441,15 @@ With `enableControls: true`:
 <!-- Add a screenshot of the row with only playing zones + the "+" button, e.g. docs/touch-control-more-speakers-button.png -->
 ![Touch control mode - more speakers button](docs/touch-control-more-speakers-button.png)
 
+
+
 **More speakers list (tapping the "+" button):**
 
 <!-- Add a screenshot of the "More speakers" list overlay, e.g. docs/touch-control-more-speakers-list.png -->
 ![Touch control mode - more speakers list](docs/touch-control-more-speakers-list.png)
+
+<img width="802" height="447" alt="image" src="https://github.com/user-attachments/assets/63e429e0-9c2b-48a6-8acb-07a7e3c345be" />
+
 
 **Touch control mode option reference:**
 
