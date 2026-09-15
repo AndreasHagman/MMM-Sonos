@@ -425,8 +425,7 @@ With `enableControls: true`:
 #### Screenshots
 
 **Idle zone card:**
-
-<img width="832" height="460" alt="Touch control mode - idle card" src="https://github.com/user-attachments/assets/426d72e5-bb20-41d8-af0f-f97f5aaf8556" />
+<img width="877" height="462" alt="image" src="https://github.com/user-attachments/assets/dcfb449a-d50f-43ce-b934-5206cded1fa9" />
 
 **Control overlay (play/pause, volume):**
 
