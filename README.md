@@ -401,6 +401,17 @@ With `enableControls: true`:
   (via Sonos' own favorites list) — there is no separate config-defined
   station list to maintain.
 
+#### Screenshots
+
+<!-- Add a screenshot of an idle zone card (e.g. docs/touch-control-idle.png) -->
+![Touch control mode - idle card](docs/touch-control-idle.png)
+
+<!-- Add a screenshot of the control overlay with play/pause and volume slider (e.g. docs/touch-control-overlay.png) -->
+![Touch control mode - control overlay](docs/touch-control-overlay.png)
+
+<!-- Add a screenshot of the favorites list in the overlay (e.g. docs/touch-control-favorites.png) -->
+![Touch control mode - favorites list](docs/touch-control-favorites.png)
+
 **Touch control mode option reference:**
 
 | Option | Default | Description |
