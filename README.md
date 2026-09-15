@@ -448,7 +448,7 @@ With `enableControls: true`:
 <!-- Add a screenshot of the "More speakers" list overlay, e.g. docs/touch-control-more-speakers-list.png -->
 ![Touch control mode - more speakers list](docs/touch-control-more-speakers-list.png)
 
-<img width="802" height="447" alt="image" src="https://github.com/user-attachments/assets/63e429e0-9c2b-48a6-8acb-07a7e3c345be" />
+<img width="455" height="432" alt="image" src="https://github.com/user-attachments/assets/7a92e10c-cd63-4662-97de-d828c29ed312" />
 
 
 **Touch control mode option reference:**
