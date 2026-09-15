@@ -436,10 +436,15 @@ With `enableControls: true`:
 
 <img width="802" height="771" alt="Touch control mode - favorites list" src="https://github.com/user-attachments/assets/19a30291-2202-4eb3-86b6-af6714acae4b" />
 
-**More speakers button (`controlShowIdleZones: false`):**
+**"+" more-speakers button (`controlShowIdleZones: false`, idle zones hidden):**
 
-<!-- Add a screenshot of the "+" more-speakers button/list, e.g. docs/touch-control-more-speakers.png -->
-![Touch control mode - more speakers button](docs/touch-control-more-speakers.png)
+<!-- Add a screenshot of the row with only playing zones + the "+" button, e.g. docs/touch-control-more-speakers-button.png -->
+![Touch control mode - more speakers button](docs/touch-control-more-speakers-button.png)
+
+**More speakers list (tapping the "+" button):**
+
+<!-- Add a screenshot of the "More speakers" list overlay, e.g. docs/touch-control-more-speakers-list.png -->
+![Touch control mode - more speakers list](docs/touch-control-more-speakers-list.png)
 
 **Touch control mode option reference:**
 
