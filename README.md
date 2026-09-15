@@ -426,7 +426,7 @@ With `enableControls: true`:
 
 **Idle zone card:**
 
-<img width="877" height="462" alt="image" src="https://github.com/user-attachments/assets/dcfb449a-d50f-43ce-b934-5206cded1fa9" />
+<img width="877" height="462" alt="Touch control mode - idle zone card" src="https://github.com/user-attachments/assets/dcfb449a-d50f-43ce-b934-5206cded1fa9" />
 
 **Control overlay (play/pause, volume):**
 
@@ -438,17 +438,11 @@ With `enableControls: true`:
 
 **"+" more-speakers button (`controlShowIdleZones: false`, idle zones hidden):**
 
-<!-- Add a screenshot of the row with only playing zones + the "+" button, e.g. docs/touch-control-more-speakers-button.png -->
-![Touch control mode - more speakers button](docs/touch-control-more-speakers-button.png)
-
-<img width="455" height="432" alt="image" src="https://github.com/user-attachments/assets/7a92e10c-cd63-4662-97de-d828c29ed312" />
+<img width="455" height="432" alt="Touch control mode - more speakers button" src="https://github.com/user-attachments/assets/7a92e10c-cd63-4662-97de-d828c29ed312" />
 
 **More speakers list (tapping the "+" button):**
 
-<!-- Add a screenshot of the "More speakers" list overlay, e.g. docs/touch-control-more-speakers-list.png -->
-![Touch control mode - more speakers list](docs/touch-control-more-speakers-list.png)
-
-<img width="867" height="365" alt="image" src="https://github.com/user-attachments/assets/f2135836-1612-47ad-9c36-9cb5076d217d" />
+<img width="867" height="365" alt="Touch control mode - more speakers list" src="https://github.com/user-attachments/assets/f2135836-1612-47ad-9c36-9cb5076d217d" />
 
 
 **Touch control mode option reference:**
